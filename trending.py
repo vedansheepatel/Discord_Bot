@@ -18,3 +18,11 @@ def get_trending():
         trending[i] = titles[i-1]+" ("+info[i-1]+")"
         i+=1
     return trending
+
+def make_list(page={}):
+    value =''
+    i = 1
+    while i<11:
+        value+= str(i)+". " + page[i] + '\n' + '\n'
+        i+=1
+    return value

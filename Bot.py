@@ -1,7 +1,8 @@
 import discord 
+from discord.ui import Button, View
 import Search
 import trending
-import recommendations
+import rankings
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -14,13 +15,15 @@ bot_cmds={}
 bot_cmds['$search [name]'] = ' get information about a certain drama/movie'
 bot_cmds['$recs [name]'] = ' get recommendations for shows similar to a certain drama/movie'
 bot_cmds['$trending'] = ' see the Top 10 trending shows/movies at the moment'
+bot_cmds['$rankings'] = ' see the top 100 shows based on their scores'
 
 @client.event
 async def on_ready():
 	print("Logged in as a bot {0.user}".format(client))
-
+currentPage=0
 @client.event
 async def on_message(message):
+    
     if message.author == client.user:
         return
     
@@ -70,17 +73,12 @@ async def on_message(message):
        
     if message.content.startswith('$trending'):
         trending_shows = trending.get_trending()
-        value = ""
-        i=1
-        while i<11:
-            value+= str(i)+". " + trending_shows[i] + '\n' + '\n'
-            i+=1
 
         embed = discord.Embed(
             colour = discord.Colour.red(),
             title='Top 10 Trending Shows'   
         )
-        embed.add_field(name="** **", value = value)
+        embed.add_field(name="** **", value = trending.make_list(trending_shows))
         await message.channel.send(embed=embed)
     
     if message.content.startswith('$recs '):
@@ -88,7 +86,7 @@ async def on_message(message):
         get_name = ' '.join(parse_message)
         _name = get_name.title()
         drama_link = Search.search_drama(message.content)
-        rec_list = recommendations.get_recs(drama_link)
+        rec_list = Search.get_recs(drama_link)
         value=''
         i=1
         while i<len(rec_list):
@@ -101,7 +99,52 @@ async def on_message(message):
         )
         embed.set_thumbnail(url=rec_list[0])
         embed.add_field(name="** **", value = value )
-        await message.channel.send(embed=embed)      
+        await message.channel.send(embed=embed)
+    
+   
+    
+    def createRankEmbed(pageNum):
+        rank_list = rankings.get_rankings()
+        embed = discord.Embed(
+            colour = discord.Colour.blue(),
+            title='Top 100 Shows Ranked By Scores',
+            description=rankings.make_list(rank_list[pageNum])
+        )
+        return embed
+    
+    if message.content.startswith('$rankings'):
+        nextButton = Button(label='>',style=discord.ButtonStyle.green, disabled=False)
+        prevButton = Button(label='<',style=discord.ButtonStyle.green, disabled=False)
+        
+        async def next_callback(interaction):
+            global currentPage
+            if(currentPage==4):
+                currentPage=0
+                await interaction.message.edit(embed=createRankEmbed(currentPage))
+                await interaction.response.defer()
+            else:
+                currentPage+=1
+                await interaction.message.edit(embed=createRankEmbed(currentPage))
+                await interaction.response.defer()
+            
+        async def prev_callback(interaction):
+            global currentPage
+            if(currentPage==0):
+                currentPage=4
+                await interaction.message.edit(embed=createRankEmbed(currentPage))
+                await interaction.response.defer()
+            else:
+                currentPage-=1
+                await interaction.message.edit(embed=createRankEmbed(currentPage))
+                await interaction.response.defer()
+
+        nextButton.callback = next_callback
+        prevButton.callback = prev_callback
+        
+        view1=View(timeout=180)
+        view1.add_item(prevButton)
+        view1.add_item(nextButton)
+        await message.channel.send(embed=createRankEmbed(currentPage), view=view1)
     
     if message.content.startswith('$help'):
         embed = discord.Embed(
@@ -113,6 +156,7 @@ async def on_message(message):
             value +=('**'+cmd+'**' + ":" + desc + '\n' + '\n')
         embed.add_field(name="** **", value = value )
         await message.channel.send(embed=embed)
+        
         
 
 client.run(os.getenv('TOKEN'))

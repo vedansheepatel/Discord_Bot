@@ -3,6 +3,7 @@ from discord.ui import Button, View
 import Search
 import trending
 import rankings
+import cast
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -16,6 +17,17 @@ bot_cmds['$search [name]'] = ' get information about a certain drama/movie'
 bot_cmds['$recs [name]'] = ' get recommendations for shows similar to a certain drama/movie'
 bot_cmds['$trending'] = ' see the Top 10 trending shows/movies at the moment'
 bot_cmds['$rankings'] = ' see the top 100 shows based on their scores'
+bot_cmds['cast [name]'] = ' get the main cast of a show/movie'
+
+def createRankEmbed(pageNum):
+    rank_list = rankings.get_rankings()
+    embed = discord.Embed(
+        colour = discord.Colour.blue(),
+        title='Top 100 Shows Ranked By Scores',
+        description=rankings.make_list(rank_list[pageNum])
+    )
+    return embed
+
 
 @client.event
 async def on_ready():
@@ -101,16 +113,6 @@ async def on_message(message):
         embed.add_field(name="** **", value = value )
         await message.channel.send(embed=embed)
     
-   
-    
-    def createRankEmbed(pageNum):
-        rank_list = rankings.get_rankings()
-        embed = discord.Embed(
-            colour = discord.Colour.blue(),
-            title='Top 100 Shows Ranked By Scores',
-            description=rankings.make_list(rank_list[pageNum])
-        )
-        return embed
     
     if message.content.startswith('$rankings'):
         nextButton = Button(label='>',style=discord.ButtonStyle.green, disabled=False)
@@ -145,6 +147,50 @@ async def on_message(message):
         view1.add_item(prevButton)
         view1.add_item(nextButton)
         await message.channel.send(embed=createRankEmbed(currentPage), view=view1)
+
+    if message.content.startswith('$cast '):
+        def createCastEmbed(pageNum):
+            cast_list=cast.get_cast(Search.search_drama(message.content))
+            embed=discord.Embed(
+                colour=discord.Colour.gold(),
+                title=cast_list[pageNum]["Name"],
+            )
+            embed.add_field(name=cast_list[pageNum]["Type"], value=cast_list[pageNum]["Role"])
+            embed.set_thumbnail(url=cast_list[pageNum]["Poster"])
+            return embed    
+       
+        nextButton = Button(label='>',style=discord.ButtonStyle.green, disabled=False)
+        prevButton = Button(label='<',style=discord.ButtonStyle.green, disabled=False)
+        
+        async def next_callback(interaction):
+            global currentPage
+            if(currentPage==5):
+                currentPage=0
+                await interaction.message.edit(embed=createCastEmbed(currentPage))
+                await interaction.response.defer()
+            else:
+                currentPage+=1
+                await interaction.message.edit(embed=createCastEmbed(currentPage))
+                await interaction.response.defer()
+            
+        async def prev_callback(interaction):
+            global currentPage
+            if(currentPage==0):
+                currentPage=5
+                await interaction.message.edit(embed=createCastEmbed(currentPage))
+                await interaction.response.defer()
+            else:
+                currentPage-=1
+                await interaction.message.edit(embed=createCastEmbed(currentPage))
+                await interaction.response.defer()
+
+        nextButton.callback = next_callback
+        prevButton.callback = prev_callback
+        
+        view1=View(timeout=180)
+        view1.add_item(prevButton)
+        view1.add_item(nextButton)
+        await message.channel.send(embed=createCastEmbed(currentPage), view=view1)
     
     if message.content.startswith('$help'):
         embed = discord.Embed(

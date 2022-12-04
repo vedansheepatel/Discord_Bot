@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
+#search cast for specific show/movie
 def get_cast(drama_url):
     response = requests.get(drama_url)
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -10,6 +11,7 @@ def get_cast(drama_url):
     mainbox = soup.find("div", class_="col-lg-8 col-md-8 col-rightx").find('div', class_='box clear')
     casts = mainbox.find_all("li", class_="list-item col-sm-4")
    
+   #get picture of actor/actress 
     def get_poster(link):
         response = requests.get('https://mydramalist.com'+link)
         soup = BeautifulSoup(response.content, 'html.parser')

@@ -19,6 +19,7 @@ def get_trending():
         i+=1
     return trending
 
+#format the output
 def make_list(page={}):
     value =''
     i = 1

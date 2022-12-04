@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
+#get top 100 shows ranked by their scores
 def get_rankings():
     rankings= []
     titles = []
@@ -51,7 +52,7 @@ def get_rankings():
     rankings.append(page5)
     
     return rankings
-
+#format the output
 def make_list(page={}):
     value =''
     i = int(list(page.keys())[0])

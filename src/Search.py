@@ -53,7 +53,8 @@ def get_data(drama_url):
 
     
     return drama_info
-
+    
+#get recs for a similar show
 def get_recs(drama_url):
     response = requests.get(drama_url)
     soup = BeautifulSoup(response.content, 'html.parser')

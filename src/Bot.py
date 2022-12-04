@@ -4,6 +4,7 @@ import Search
 import trending
 import rankings
 import cast
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -12,13 +13,18 @@ from discord.ext import commands
 intents = discord.Intents.all()
 client = discord.Client(intents=intents) 
 
+
 bot_cmds={}
 bot_cmds['$search [name]'] = ' get information about a certain drama/movie'
 bot_cmds['$recs [name]'] = ' get recommendations for shows similar to a certain drama/movie'
 bot_cmds['$trending'] = ' see the Top 10 trending shows/movies at the moment'
 bot_cmds['$rankings'] = ' see the top 100 shows based on their scores'
-bot_cmds['cast [name]'] = ' get the main cast of a show/movie'
+bot_cmds['$cast [name]'] = ' get the main cast of a show/movie'
 
+#global vars ( to use in async def)
+currentPage=0
+
+#create ranking lists
 def createRankEmbed(pageNum):
     rank_list = rankings.get_rankings()
     embed = discord.Embed(
@@ -28,20 +34,23 @@ def createRankEmbed(pageNum):
     )
     return embed
 
-
+#bot log in
 @client.event
 async def on_ready():
 	print("Logged in as a bot {0.user}".format(client))
-currentPage=0
+
+#user command responses
 @client.event
 async def on_message(message):
     
+    #prevent bot from responding to itself
     if message.author == client.user:
         return
     
     if message.content.startswith("$hello"):
         await message.channel.send("Hello "+ message.author.name + '!')
     
+    #search show embed
     if message.content.startswith('$search '):
         
         drama_link = Search.search_drama(message.content)
@@ -83,6 +92,7 @@ async def on_message(message):
             embed.add_field(name="Release Date", value=drama_data['release date'], inline=True)
             await message.channel.send(embed=embed)
        
+    #trending shows embed
     if message.content.startswith('$trending'):
         trending_shows = trending.get_trending()
 
@@ -93,6 +103,7 @@ async def on_message(message):
         embed.add_field(name="** **", value = trending.make_list(trending_shows))
         await message.channel.send(embed=embed)
     
+    #recommended shows embed
     if message.content.startswith('$recs '):
         parse_message = message.content.split()[1:]
         get_name = ' '.join(parse_message)
@@ -113,7 +124,7 @@ async def on_message(message):
         embed.add_field(name="** **", value = value )
         await message.channel.send(embed=embed)
     
-    
+    #rankings embed
     if message.content.startswith('$rankings'):
         nextButton = Button(label='>',style=discord.ButtonStyle.green, disabled=False)
         prevButton = Button(label='<',style=discord.ButtonStyle.green, disabled=False)
@@ -148,6 +159,7 @@ async def on_message(message):
         view1.add_item(nextButton)
         await message.channel.send(embed=createRankEmbed(currentPage), view=view1)
 
+    #cast embed
     if message.content.startswith('$cast '):
         def createCastEmbed(pageNum):
             cast_list=cast.get_cast(Search.search_drama(message.content))
@@ -192,15 +204,17 @@ async def on_message(message):
         view1.add_item(nextButton)
         await message.channel.send(embed=createCastEmbed(currentPage), view=view1)
     
+    #help embed
     if message.content.startswith('$help'):
         embed = discord.Embed(
             colour = discord.Colour.light_gray(),
-            title='List Of Commands Used By DramaBot'      
+            title='Help DramaBot',
+            description = 'Drama Bot helps you and your friends discover various new east asian shows and movies!'      
         )
         value =''
         for cmd, desc in bot_cmds.items():
             value +=('**'+cmd+'**' + ":" + desc + '\n' + '\n')
-        embed.add_field(name="** **", value = value )
+        embed.add_field(name="List of commands the bot uses", value = value )
         await message.channel.send(embed=embed)
         
         
